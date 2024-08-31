@@ -43,7 +43,7 @@ void processMd5(const char * file) {
             {
                 strcat(shellInstruction, "md5sum ");
                 strcat(shellInstruction, file);
-                FILE * stream = poepen(shellInstruction, 'r');
+                FILE *stream = poepen(shellInstruction, 'r');
 
                 if(stream == NULL)
                 {
@@ -73,7 +73,7 @@ void processMd5(const char * file) {
             free(readLine);
             pclose(stream);
             }
-            free(stream);
+            free(shellInstruction);
         } 
         else {
             perror("Empty line");
