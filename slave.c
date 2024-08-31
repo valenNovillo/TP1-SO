@@ -21,13 +21,12 @@ int main(int argc, char * argv[]) {
     
     while((len = getline(&line, &len, stdin)) > 0) {
         processMd5(line);
-        printf("%s\n", line);
         free(line);
-        line = NULL; //ues free no modifica la dirección del puntero line
+        line = NULL; //Pues free no modifica la dirección del puntero line
         
     }
 
-
+    return 0;
     //TODO Enviar señal a proceso padre que se libero
 }
 
@@ -43,7 +42,7 @@ void processMd5(const char * file) {
             {
                 strcat(shellInstruction, "md5sum ");
                 strcat(shellInstruction, file);
-                FILE *stream = poepen(shellInstruction, 'r');
+                FILE *stream = popen(shellInstruction, "r");
 
                 if(stream == NULL)
                 {
@@ -63,15 +62,11 @@ void processMd5(const char * file) {
                 }
 
                 pid_t pid =  getpid();
-                char buf_pid[30];
-                if(sprintf(buf_pid, "Slave ID: %d -> ", pid) <= 0){//Formatea el PID del proceso en una cadena con un mensaje Slave ID: ... -> .
-                perror("Failed in sprintf");//Muestra un mensaje de error si sprintf falla.
-                free(shellInstruction);//Libera la memoria de command.
-                return;
-            }
-            printf("%s %s\t", buf_pid, readLine);
-            free(readLine);
-            pclose(stream);
+
+                printf("File: %.*s - MD5: %.*s - PID: %d\n", (int)instructionLen, file, 32, readLine, pid);                            
+
+                free(readLine);
+                pclose(stream);
             }
             free(shellInstruction);
         } 
