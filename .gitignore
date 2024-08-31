@@ -1,0 +1,7 @@
+#Object files
+*.o
+
+#Bash files
+.bashrc
+*.sh
+.bash_history
