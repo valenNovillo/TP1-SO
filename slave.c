@@ -12,19 +12,21 @@ void processMd5(const char * file);
 
 int main(int argc, char * argv[]) { 
 
-    for(int i = 0; i < argc -1; i++) {
+    for(int i = 1; i < argc; i++) {
         processMd5(argv[i]);
     }
 
     char * line = NULL;
     size_t len = 0;
     
-    while((len = getline(&line, &len, stdin)) > 0) {
+    while(getline(&line, &len, stdin) > 0) {
+        line[strcspn(line, "\n")] = '\0';
         processMd5(line);
-        free(line);
-        line = NULL; //Pues free no modifica la dirección del puntero line
+        //line = NULL; //Pues free no modifica la dirección del puntero line
         
     }
+
+    free(line);
 
     return 0;
     //TODO Enviar señal a proceso padre que se libero
