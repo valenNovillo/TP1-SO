@@ -8,6 +8,11 @@ all: $(EXE)
 %: %.c
 	$(GCC) $(CFLAGS) $< -o $@
 
+checkval: $(EXE)
+
+%: %.c
+	$(GCC) $(CFLAGSFROVALGRINDS) $< -o $@
+
 clean:
 	rm -f $(EXE)
 
