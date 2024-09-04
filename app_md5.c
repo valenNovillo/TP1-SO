@@ -7,17 +7,18 @@
 
 #define SHM_NAME "/shm"
 #define ERROR_VALUE -1
+#define SEM_NAME "/available_files"
+#define ALL_READ_WRITE 00666
+
 
 int main(int argc, char * argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    createSharedMemory();
+    SharedMemory * shm = create_shared_memory();
     printf("%s\n", SHM_NAME);
-
-    
 }
 
-SharedMemory * createSharedMemory() {
+SharedMemory * create_shared_memory() {
     int shm_fd;
     shm_fd = shm_open(SHM_NAME, O_RDWR | O_CREAT | O_TRUNC, S_IWUSR);
     
@@ -33,8 +34,16 @@ SharedMemory * createSharedMemory() {
 
     SharedMemory * shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if(shm == MAP_FAILED) {
+        perror("problem mappping to shared memory\n");
         exit(errno);
     }
-    
+
+    shm->available_files = sem_open(SEM_NAME, O_CREAT, ALL_READ_WRITE, 0);
+    if(shm->available_files == SEM_FAILED) {
+        perror("problem creating a semaphore\n");
+        exit(errno);
+    }
+
     close(shm_fd);
+    return shm;
 }
