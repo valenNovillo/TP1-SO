@@ -4,7 +4,6 @@
 
 typedef struct {
     char buf[MAX_BUF];
-    sem_t ready_to_read;
-    sem_t ready_to_write;
-    sem_t mutex;
+    int pendingFiles;
+    sem_t sem;
 } SharedMemory;
