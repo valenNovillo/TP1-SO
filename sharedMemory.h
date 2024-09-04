@@ -4,6 +4,6 @@
 
 typedef struct {
     char buf[MAX_BUF];
-    int pendingFiles;
-    sem_t sem;
+    int total_files;
+    sem_t available_files;
 } SharedMemory;
