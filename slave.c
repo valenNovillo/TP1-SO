@@ -5,31 +5,30 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-//Cantidad de caracteres para el comando de la shell
-#define BLOCK 7
+#define COMMAND_CHARS 7 //Cantidad de caracteres para el comando de la shell
+#define MD5 32
 
 void processMd5(const char * file);
 
 int main(int argc, char * argv[]) { 
-
-    for(int i = 1; i < argc; i++) {
-        processMd5(argv[i]);
-    }
+    setvbuf(stdout,NULL,_IONBF,0);
 
     char * line = NULL;
     size_t len = 0;
-    
-    while(getline(&line, &len, stdin) > 0) {
+
+   while(getline(&line, &len, stdin) > 0) {
         line[strcspn(line, "\n")] = '\0';
-        processMd5(line);
-        //line = NULL; //Pues free no modifica la dirección del puntero line
-        
-    }
+
+        char *token = strtok(line, " ");
+        while (token != NULL) {
+            processMd5(token);
+            token = strtok(NULL, " ");
+        }
+   }
 
     free(line);
 
     return 0;
-    //TODO Enviar señal a proceso padre que se libero
 }
 
 
@@ -38,7 +37,7 @@ void processMd5(const char * file) {
         size_t instructionLen = 0;
 
         if(file != NULL && (instructionLen = strlen(file)) != 0) {
-            shellInstruction = calloc(instructionLen + BLOCK + 1, sizeof(char));
+            shellInstruction = calloc(instructionLen + COMMAND_CHARS + 1, sizeof(char));
 
             if(shellInstruction != NULL)
             {
@@ -65,7 +64,7 @@ void processMd5(const char * file) {
 
                 pid_t pid =  getpid();
 
-                printf("File: %.*s - MD5: %.*s - PID: %d\n", (int)instructionLen, file, 32, readLine, pid);                            
+                printf("File: %.*s - MD5: %.*s - PID: %d\n", (int)instructionLen, file, MD5, readLine, pid);                            
 
                 free(readLine);
                 pclose(stream);
