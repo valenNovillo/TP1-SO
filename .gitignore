@@ -5,3 +5,7 @@
 .bashrc
 *.sh
 .bash_history
+
+.lessht
+
+slave
