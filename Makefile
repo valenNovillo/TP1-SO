@@ -1,6 +1,6 @@
 include Makefile.inc
 
-SRC = slave.c
+SRC = slave.c app_md5.c view.c
 EXE = $(SRC:.c=)
 
 all: $(EXE)
