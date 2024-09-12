@@ -30,6 +30,7 @@ int destroy_shared_memory_and_sem(SharedMemory * shm);
 int get_answer(int fd, char * answer);
 int initial_distribution(char * argv[], int * pending_processes, int slave_count, int (*pipe_app_slave_fd)[PIPE_BORDERS]);
 int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], int * children_pids);
+void print_conection_info(const char * bufName, const int time);
 
 
 int main(int argc, char * argv[]) {
@@ -90,7 +91,7 @@ int main(int argc, char * argv[]) {
                 } 
                 ready_to_read--;
 
-                answer[char_read] = "/0";
+                answer[char_read] = '\0';
                 char * token = strtok(answer, "\n");
                 
                 while(token != NULL) {

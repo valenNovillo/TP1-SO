@@ -38,13 +38,13 @@ int main(int argc, char *argv[])
 
     while((shm->total_files) > 0)
     {
-        sem_wait(&(shm->available_files));
+        sem_wait((shm->available_files));
         line_length = printf("%s", shm->buf + charsRead);
         (shm->total_files)--;
         charsRead += line_length + 1;
     }
 
-    if(sem_close(&(shm->available_files)) == ERROR_VALUE){
+    if(sem_close((shm->available_files)) == ERROR_VALUE){
         perror("Error destroying semaphore\n");
         exit(errno);
     }
