@@ -3,10 +3,12 @@
 #include <sys/stat.h>       /* For mode constants */
 #include <fcntl.h>          /* For O_* constants */
 #include <errno.h>
-#include <sharedMemory.h>
 #include <sys/select.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
+
+#include "sharedMemory.h"
 
 #define SHM_NAME "/shm"
 #define ERROR_VALUE -1
@@ -19,6 +21,15 @@
 #define READ 0
 #define WRITE 1
 #define BUFF_LEN 5000
+
+int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS]);
+void super_exit(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], SharedMemory * shm, FILE* resultsText);
+int get_max_fd(fd_set * file_descriptors, int (*pipe_slave_app_fd)[PIPE_BORDERS], const int slave_count);
+SharedMemory * create_shared_memory(int total_files);
+int destroy_shared_memory_and_sem(SharedMemory * shm);
+int get_answer(int fd, char * answer);
+int initial_distribution(char * argv[], int * pending_processes, int slave_count, int (*pipe_app_slave_fd)[PIPE_BORDERS]);
+int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], int * children_pids);
 
 
 int main(int argc, char * argv[]) {
@@ -39,7 +50,7 @@ int main(int argc, char * argv[]) {
     }
 
     SharedMemory * shm;
-    if(shm = create_shared_memory(pending_processes) == ERROR_VALUE) {
+    if((shm = create_shared_memory(pending_processes)) == NULL) {
         fclose(resultsText);
         exit(errno);
     }
@@ -79,12 +90,12 @@ int main(int argc, char * argv[]) {
                 } 
                 ready_to_read--;
 
-                answer[char_read] = '/0';
+                answer[char_read] = "/0";
                 char * token = strtok(answer, "\n");
                 
                 while(token != NULL) {
                     fprintf(resultsText, "%s\n", token);
-                    offset_buf_shm +=  snprintf((shm->buf) + offset_buf_shm, MAX_BUF, "%s\n", token);
+                    offset_buf_shm +=  snprintf((shm->buf) + offset_buf_shm, MAX_BUF, "%s", token);
                     sem_post(shm->available_files);
                     sended++;
                     token = strtok(NULL, "\n");
@@ -220,30 +231,30 @@ SharedMemory * create_shared_memory(int total_files) {
     
     if(shm_fd == ERROR_VALUE) {
         perror("problem creating a shared memory\n");
-        return ERROR_VALUE;
+        return NULL;
     }
     
-    if(ftrucate(shm_fd, sizeof(SharedMemory)) == ERROR_VALUE) {
+    if(ftruncate(shm_fd, sizeof(SharedMemory)) == ERROR_VALUE) {
         perror("problem sizing the memory\n");
-        return ERROR_VALUE;
+        return NULL;
     }
 
     SharedMemory * shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if(shm == MAP_FAILED) {
         perror("problem mappping to shared memory\n");
-        return ERROR_VALUE;
+        return NULL;
     }
 
     sem_unlink(SEM_NAME);
     shm->available_files = sem_open(SEM_NAME, O_CREAT, ALL_READ_WRITE, 0);
     if(shm->available_files == SEM_FAILED) {
         perror("problem creating a semaphore\n");
-        return ERROR_VALUE;
+        return NULL;
     }
 
     if(close(shm_fd) == ERROR_VALUE) {
         perror("Error closing fd of shared memory\n");
-        return ERROR_VALUE;
+        return NULL;
     }
 
     shm->total_files = total_files;
@@ -272,7 +283,7 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
 }
 
 
-int get_answer(int fd, char * answer){
+int get_answer(int fd, char * answer) {
     if(dup2(fd, STDIN_FILENO) != 0){
         perror("Error copying file descriptor\n");
         return ERROR_VALUE;

@@ -14,6 +14,8 @@
 #define MAX_LENGTH_NAME 50
 #define ERROR_VALUE -1
 
+SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm);
+
 int main(int argc, char *argv[])
 {
     setvbuf(stdout, NULL, _IONBF, 0); 
