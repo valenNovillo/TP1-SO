@@ -6,7 +6,7 @@
 *.sh
 .bash_history
 
-.lessht
+.lesshst
 
 slave
 app_md5

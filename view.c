@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    SharedMemory * shm = open_shared_memory_and_sem();
+    SharedMemory * shm = open_shared_memory_and_sem(shm_name, shm);
 
     int line_length;
     int charsRead = 0;
@@ -56,8 +56,9 @@ int main(int argc, char *argv[])
 
 }
 
-SharedMemory * open_shared_memory_and_sem() {
-    if((int shm_fd = shm_open(shm_name, O_RDONLY | O_TRUNC, S_IRUSR)) == ERROR_VALUE) {
+SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm) {
+    int shm_fd;
+    if((shm_fd = shm_open(shm_name, O_RDONLY | O_TRUNC, S_IRUSR)) == ERROR_VALUE) {
         perror("Error openning share memory\n");
         exit(errno);
     }
