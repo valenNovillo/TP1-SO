@@ -1,26 +1,16 @@
-#include <stdio.h>
-#include <sys/mman.h>
-#include <sys/stat.h>       /* For mode constants */
-#include <fcntl.h>          /* For O_* constants */
-#include <errno.h>
 #include <sys/select.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-
 #include "sharedMemory.h"
+#include "include.h"
 
-#define SHM_NAME "/shm"
-#define ERROR_VALUE -1
-#define ALL_READ_WRITE 00666
 #define MAX_SLAVES 10
 #define PERCENTAGE_FILES_PER_SLAVES 0.1
 #define WAIT_VIEW 2
 #define PIPE_BORDERS 2
 #define READ 0
 #define WRITE 1
-#define BUFF_LEN 5000
+#define BUF_LEN 5000
 
+// PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------------
 int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS]);
 void super_exit(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], SharedMemory * shm, FILE* resultsText);
 int get_max_fd(fd_set * file_descriptors, int (*pipe_slave_app_fd)[PIPE_BORDERS], const int slave_count);
@@ -30,12 +20,12 @@ int get_answer(int fd, char * answer);
 int initial_distribution(char * argv[], int * pending_processes, int slave_count, int (*pipe_app_slave_fd)[PIPE_BORDERS]);
 int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], int * children_pids);
 void print_conection_info(const char * bufName, const int time);
-
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(int argc, char * argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    if(argc == 1){
+    if(argc == 1) {
         perror("There must be at least one file to process");
         return 1;
     }
@@ -44,12 +34,14 @@ int main(int argc, char * argv[]) {
     int slave_count = (pending_processes < MAX_SLAVES) ? pending_processes : MAX_SLAVES;
 
     FILE* resultsText = fopen("resultados.txt", "w");
-    if(resultsText == NULL){
+
+    if(resultsText == NULL) {
         perror("Error opnening file results.txt\n");
         exit(errno);
     }
 
     SharedMemory * shm;
+
     if((shm = create_shared_memory(pending_processes)) == NULL) {
         fclose(resultsText);
         exit(errno);
@@ -60,7 +52,6 @@ int main(int argc, char * argv[]) {
     int children_pids[slave_count];
     int pipe_slave_app_fd[slave_count][PIPE_BORDERS];
     int pipe_app_slave_fd[slave_count][PIPE_BORDERS];
-
 
     if(new_baby_slaves(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, children_pids) == ERROR_VALUE) {
         super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
@@ -75,26 +66,23 @@ int main(int argc, char * argv[]) {
     int offset_buf_shm = 0;
     int sended = 0;
      
-    while(sended < (argc - 1))
-    { 
+    while(sended < (argc - 1)) { 
         int max_fd = get_max_fd(&read_fds, pipe_slave_app_fd, slave_count);
         
-        if((ready_to_read = select(max_fd + 1, &read_fds,NULL, NULL, NULL)) == ERROR_VALUE){
+        if((ready_to_read = select(max_fd + 1, &read_fds,NULL, NULL, NULL)) == ERROR_VALUE) {
             perror("Error del select\n");
             super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
         }
          
-        for (int i = 0; i < slave_count && ready_to_read > 0; i++)
-        {
+        for (int i = 0; i < slave_count && ready_to_read > 0; i++) {
             if (FD_ISSET(pipe_slave_app_fd[i][READ], &read_fds)) {
-                
                 char answer[MAX_BUF];
                 int char_read = get_answer(pipe_slave_app_fd[i][READ], answer);
                 if(char_read == ERROR_VALUE) {
                    super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
                 } 
+                
                 ready_to_read--;
-
                 answer[char_read] = '\0';
                 char * token = strtok(answer, "\n");
                 
@@ -123,58 +111,50 @@ int main(int argc, char * argv[]) {
 
 }
 
-void super_exit(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], SharedMemory * shm, FILE* resultsText)
-{
+void super_exit(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS], SharedMemory * shm, FILE* resultsText) {
     clean_pipes(slave_count, pipe_slave_app_fd, pipe_app_slave_fd);
     destroy_shared_memory_and_sem(shm);
     fclose(resultsText);
     exit(errno); 
 }
 
-int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS])
-{
+int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS]) {
     int i = 0;
     while(i < slave_count){
-        if(close(pipe_app_slave_fd[i][WRITE]) == ERROR_VALUE){
+        if(close(pipe_app_slave_fd[i][WRITE]) == ERROR_VALUE) {
             perror("Error closing one of the pipe_app_slave fd\n");
             return ERROR_VALUE;
         }
 
-         if(close(pipe_slave_app_fd[i][READ]) == ERROR_VALUE){
+         if(close(pipe_slave_app_fd[i][READ]) == ERROR_VALUE) {
             perror("Error closing one of the pipe_app_slave fd\n");
             return ERROR_VALUE;
-        }
-        
+        }   
         i++;
     }
-
     return i;
 }
 
-/*En esta funcion ademas de obtener el maximo fd, se completa el vector que recibe por parametro con TODOS los fd*/
-int get_max_fd(fd_set * file_descriptors, int (*pipe_slave_app_fd)[PIPE_BORDERS], const int slave_count){
+int get_max_fd(fd_set * file_descriptors, int (*pipe_slave_app_fd)[PIPE_BORDERS], const int slave_count) {
     FD_ZERO(file_descriptors);
     int max_fd = -1;
-    for(int i = 0; i < slave_count; i++)
-    {
+    for(int i = 0; i < slave_count; i++) {
         FD_SET(pipe_slave_app_fd[i][READ], file_descriptors);
-        if(pipe_slave_app_fd[i][READ] > max_fd){
+        if(pipe_slave_app_fd[i][READ] > max_fd) {
             max_fd = pipe_slave_app_fd[i][READ];
         }
     }
-
     return max_fd; 
 }
-
 
 int initial_distribution(char * argv[], int * pending_processes, int slave_count, int (*pipe_app_slave_fd)[PIPE_BORDERS]) {
     int proportion_files_per_slave = (PERCENTAGE_FILES_PER_SLAVES * (*pending_processes) / slave_count);
     int files_per_slaves = (proportion_files_per_slave < 1) ? 1 : proportion_files_per_slave;
 
     for (int i = 0; i < slave_count; i++) {
-        char path_files[BUFF_LEN];
+        char path_files[BUF_LEN];
         path_files[0] = '\0';
-        for(int j = i * files_per_slaves + 1; j <= i * files_per_slaves + files_per_slaves; j++){
+        for(int j = i * files_per_slaves + 1; j <= i * files_per_slaves + files_per_slaves; j++) {
             strcat(path_files, argv[j]);
             if (j < i * files_per_slaves + files_per_slaves - 1)
                 strcat(path_files, " ");
@@ -184,7 +164,6 @@ int initial_distribution(char * argv[], int * pending_processes, int slave_count
             return ERROR_VALUE;
         }
     }
-    
     *pending_processes = *pending_processes - files_per_slaves * slave_count;
     return 0;
 }
@@ -233,7 +212,6 @@ void print_conection_info(const char * bufName, const int time) {
     printf("\n");
 }
 
-
 SharedMemory * create_shared_memory(int total_files) {
     shm_unlink(SHM_NAME);
        
@@ -251,6 +229,7 @@ SharedMemory * create_shared_memory(int total_files) {
     }
 
     SharedMemory * shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
     if(shm == MAP_FAILED) {
         perror("problem mappping to shared memory\n");
         return NULL;
@@ -278,7 +257,7 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
         return ERROR_VALUE;
     }
 
-    if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE){
+    if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE) {
         perror("Error unmapping shared memory\n");
         return ERROR_VALUE;
     }
@@ -287,10 +266,7 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
         perror("Error unlinking Share Memory");
         return ERROR_VALUE;
     }
-
-
 }
-
 
 int get_answer(int fd, char * answer) {
     if(dup2(fd, STDIN_FILENO) != 0){
@@ -299,6 +275,7 @@ int get_answer(int fd, char * answer) {
     }
 
     int char_read = read(STDIN_FILENO, answer, MAX_BUF);
+
     if(char_read == ERROR_VALUE){
         perror("Error reading line\n");
         return ERROR_VALUE;

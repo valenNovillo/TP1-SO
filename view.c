@@ -1,31 +1,21 @@
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <semaphore.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <sys/time.h>
-#include <errno.h> 
-#include <sys/stat.h>
-#include <signal.h>
 #include "sharedMemory.h"
+#include "include.h"
+
 #define MAX_LENGTH_NAME 50
-#define ERROR_VALUE -1
 
+// PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------------
 SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm);
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0); 
     char shm_name[MAX_LENGTH_NAME] = {0};
 
     if(argc > 1) {
         strcpy(shm_name, argv[1]);
     } else {
-        if(read(STDIN_FILENO, &shm_name, MAX_LENGTH_NAME) == ERROR_VALUE)
-        {
+        if(read(STDIN_FILENO, &shm_name, MAX_LENGTH_NAME) == ERROR_VALUE) {
             perror("Failed reading shm name\n");
             exit(errno);
         }
@@ -37,8 +27,7 @@ int main(int argc, char *argv[])
     int charsRead = 0;
     char * line_end;
 
-    while((shm->total_files) > 0)
-    {
+    while((shm->total_files) > 0) {
         sem_wait(&(shm->available_files));
         line_end = strchr(shm->buf + charsRead, '\n');
         line_end = '\0';
@@ -47,13 +36,11 @@ int main(int argc, char *argv[])
         charsRead += line_length;
     }
 
-    if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE){
+    if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE) {
         perror("Error unmapping shared memory\n");
         exit(errno);
     }
-
     return 0;    
-
 }
 
 SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm) {
@@ -73,7 +60,6 @@ SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm) {
         perror("Error closing fd of shared memory\n");
         exit(errno);
     }
-
     return shm;
 }
 

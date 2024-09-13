@@ -1,7 +1,7 @@
 #include  <semaphore.h>
 
+#define SHM_NAME "/shm"
 #define MAX_BUF 500000
-#define LEN_NAME_SEM 17
 
 typedef struct {
     char buf[MAX_BUF];

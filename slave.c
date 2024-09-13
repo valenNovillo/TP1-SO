@@ -1,14 +1,11 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/wait.h> 
+#include "include.h"
 
 #define COMMAND_CHARS 7 //Cantidad de caracteres para el comando de la shell
 #define MD5 32
 
+// PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------------
 void processMd5(const char * file);
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(int argc, char * argv[]) { 
     setvbuf(stdout,NULL,_IONBF,0);
@@ -25,12 +22,9 @@ int main(int argc, char * argv[]) {
             token = strtok(NULL, " ");
         }
    }
-
     free(line);
-
     return 0;
 }
-
 
 void processMd5(const char * file) {
         char * shellInstruction;
@@ -39,14 +33,12 @@ void processMd5(const char * file) {
         if(file != NULL && (instructionLen = strlen(file)) != 0) {
             shellInstruction = calloc(instructionLen + COMMAND_CHARS + 1, sizeof(char));
 
-            if(shellInstruction != NULL)
-            {
+            if(shellInstruction != NULL) {
                 strcat(shellInstruction, "md5sum ");
                 strcat(shellInstruction, file);
                 FILE *stream = popen(shellInstruction, "r");
 
-                if(stream == NULL)
-                {
+                if(stream == NULL) {
                     perror("Error al generar el md5sum\n");
                     free(shellInstruction);
                     return;
@@ -55,8 +47,7 @@ void processMd5(const char * file) {
                 char *readLine = NULL;
                 size_t rta_len = 0;
 
-                if(getline(&readLine, &rta_len, stream) < 0)
-                {
+                if(getline(&readLine, &rta_len, stream) < 0) {
                     perror("Error leyendo la rta de md5sum\n");
                     free(shellInstruction);
                     return;
