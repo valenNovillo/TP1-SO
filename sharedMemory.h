@@ -6,6 +6,5 @@
 typedef struct {
     char buf[MAX_BUF];
     int total_files;
-    sem_t * available_files;
-    char sem_path[LEN_NAME_SEM];
+    sem_t available_files;
 } SharedMemory;
