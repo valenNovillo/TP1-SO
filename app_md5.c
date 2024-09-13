@@ -1,7 +1,12 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++ and C#: http://www.viva64.com
 #include <sys/select.h>
 #include "sharedMemory.h"
 #include "include.h"
 
+#define SHM_NAME "/shm"
 #define MAX_SLAVES 10
 #define PERCENTAGE_FILES_PER_SLAVES 0.1
 #define WAIT_VIEW 2
@@ -184,18 +189,22 @@ int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS
                 return ERROR_VALUE;
             }
             
+            for (int j = 0; j < i; j++) {
+                    if (close(pipe_app_slave_fd[j][WRITE]) == ERROR_VALUE || close(pipe_slave_app_fd[j][READ]) == ERROR_VALUE) {
+                    perror("problem closing pipes\n");
+                    return ERROR_VALUE;
+                }
+            } 
+
             if (close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_app_slave_fd[i][WRITE]) == ERROR_VALUE
-                || close(pipe_slave_app_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE) {
-                perror("problem closing pipes\n");
-                return ERROR_VALUE;
+                    || close(pipe_slave_app_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE) {
+                    perror("problem closing pipes\n");
+                    return ERROR_VALUE;
             }
 
             char * const argv[] = {"slave", NULL};
             execve("./slave", argv, NULL);
             
-        } else if(children_pids[i] == ERROR_VALUE) {
-            perror("Fork failed");
-            return ERROR_VALUE;
         }
 
         if( close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE ) { 
@@ -266,6 +275,7 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
         perror("Error unlinking Share Memory");
         return ERROR_VALUE;
     }
+    return 0;
 }
 
 int get_answer(int fd, char * answer) {
