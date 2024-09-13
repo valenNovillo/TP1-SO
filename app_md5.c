@@ -10,7 +10,7 @@
 
 #include "sharedMemory.h"
 
-#define SHM_NAME "/shm"
+#define SHM_NAME "/shmmm"
 #define ERROR_VALUE -1
 #define SEM_NAME "/available_files"
 #define ALL_READ_WRITE 00666
@@ -62,24 +62,29 @@ int main(int argc, char * argv[]) {
     int pipe_slave_app_fd[slave_count][PIPE_BORDERS];
     int pipe_app_slave_fd[slave_count][PIPE_BORDERS];
 
-    if (initial_distribution(argv, &pending_processes, slave_count, pipe_app_slave_fd) == ERROR_VALUE) {
-        super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
-    }
-    
+
     if(new_baby_slaves(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, children_pids) == ERROR_VALUE) {
         super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
     }
 
+    if (initial_distribution(argv, &pending_processes, slave_count, pipe_app_slave_fd) == ERROR_VALUE) {
+        super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
+    }
+   
     int ready_to_read;
     fd_set read_fds;
     int offset_buf_shm = 0;
     int sended = 0;
-    
+     
     while(sended < (argc - 1))
-    {
+    { 
         int max_fd = get_max_fd(&read_fds, pipe_slave_app_fd, slave_count);
-        ready_to_read = select(max_fd, &read_fds,NULL, NULL, NULL);
-
+        
+        if((ready_to_read = select(max_fd + 1, &read_fds,NULL, NULL, NULL)) == ERROR_VALUE){
+            perror("Error del select\n");
+            super_exit(slave_count, pipe_slave_app_fd, pipe_app_slave_fd, shm, resultsText);
+        }
+         
         for (int i = 0; i < slave_count && ready_to_read > 0; i++)
         {
             if (FD_ISSET(pipe_slave_app_fd[i][READ], &read_fds)) {
@@ -201,13 +206,18 @@ int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS
                 return ERROR_VALUE;
             }
             
-            if (close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_app_slave_fd[i][WRITE] == ERROR_VALUE)
+            if (close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_app_slave_fd[i][WRITE]) == ERROR_VALUE
                 || close(pipe_slave_app_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE) {
                 perror("problem closing pipes\n");
                 return ERROR_VALUE;
             }
 
-            execve("/slave.c", NULL, NULL);
+            char * const argv[] = {"slave", NULL};
+            execve("./slave", argv, NULL);
+            
+        } else if(children_pids[i] == ERROR_VALUE) {
+            perror("Fork failed");
+            return ERROR_VALUE;
         }
 
         if( close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE ) { 
@@ -219,8 +229,9 @@ int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS
 }
 
 void print_conection_info(const char * bufName, const int time) {
-    printf("%s\n", bufName);
+    printf("%s", bufName);
     sleep(time);
+    printf("\n");
 }
 
 
@@ -228,7 +239,7 @@ SharedMemory * create_shared_memory(int total_files) {
     shm_unlink(SHM_NAME);
        
     int shm_fd;
-    shm_fd = shm_open(SHM_NAME, O_RDWR | O_CREAT | O_TRUNC, S_IWUSR);
+    shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR | O_TRUNC, 0644);
     
     if(shm_fd == ERROR_VALUE) {
         perror("problem creating a shared memory\n");
@@ -266,6 +277,16 @@ SharedMemory * create_shared_memory(int total_files) {
 
 int destroy_shared_memory_and_sem(SharedMemory * shm) {
 
+    if(sem_close(shm->available_files) == ERROR_VALUE) {
+        perror("Error closing semaphore");
+        return ERROR_VALUE;
+    }
+
+    if(sem_unlink(SEM_NAME) == ERROR_VALUE){
+        perror("Error unlinking semaphore");
+        return ERROR_VALUE;
+    }
+
     if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE){
         perror("Error unmapping shared memory\n");
         return ERROR_VALUE;
@@ -276,10 +297,6 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
         return ERROR_VALUE;
     }
 
-    if(sem_unlink(SEM_NAME)){
-        perror("Error unlinking semaphore");
-        return ERROR_VALUE;
-    }
 
 }
 
@@ -293,7 +310,6 @@ int get_answer(int fd, char * answer) {
     int char_read = read(STDIN_FILENO, answer, MAX_BUF);
     if(char_read == ERROR_VALUE){
         perror("Error reading line\n");
-        printf("%d",errno);
         return ERROR_VALUE;
     }
     return char_read;

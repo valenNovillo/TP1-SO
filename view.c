@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <errno.h>
+#include <errno.h> 
 #include <sys/stat.h>
 #include <signal.h>
 #include "sharedMemory.h"
@@ -39,13 +39,14 @@ int main(int argc, char *argv[])
     while((shm->total_files) > 0)
     {
         sem_wait((shm->available_files));
+        printf("Hola\n");
         line_length = printf("%s", shm->buf + charsRead);
         (shm->total_files)--;
         charsRead += line_length + 1;
     }
 
     if(sem_close((shm->available_files)) == ERROR_VALUE){
-        perror("Error destroying semaphore\n");
+        perror("Error closing semaphore\n");
         exit(errno);
     }
 
@@ -60,20 +61,21 @@ int main(int argc, char *argv[])
 
 SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm) {
     int shm_fd;
-    if((shm_fd = shm_open(shm_name, O_RDONLY | O_TRUNC, S_IRUSR)) == ERROR_VALUE) {
-        perror("Error openning share memory\n");
+
+    if((shm_fd = shm_open(shm_name, O_RDWR, 0644)) == ERROR_VALUE) {
+        perror("Error opening share memory\n");
         exit(errno);
     }
 
-    if((shm = mmap(NULL, sizeof(SharedMemory), PROT_READ, MAP_SHARED, shm_fd, 0)) == MAP_FAILED) {
+    if((shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == MAP_FAILED) {
         perror("Error mapping shared memory\n");
         exit(errno);
     }
 
-    shm->available_files = sem_open(shm->sem_path, 0);
+    shm->available_files = sem_open(shm->sem_path, O_RDWR);
     
     if(shm->available_files == SEM_FAILED) {
-        perror("problem opening a semaphore\n");
+        perror("Error opening a semaphore\n");
         exit(errno);
     }
 

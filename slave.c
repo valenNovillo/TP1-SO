@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <sys/wait.h>
+#include <sys/wait.h> 
 
 #define COMMAND_CHARS 7 //Cantidad de caracteres para el comando de la shell
 #define MD5 32
