@@ -35,19 +35,16 @@ int main(int argc, char *argv[])
 
     int line_length;
     int charsRead = 0;
+    char * line_end;
 
     while((shm->total_files) > 0)
     {
-        sem_wait((shm->available_files));
-        printf("Hola\n");
+        sem_wait(&(shm->available_files));
+        line_end = strchr(shm->buf + charsRead, '\n');
+        line_end = '\0';
         line_length = printf("%s", shm->buf + charsRead);
         (shm->total_files)--;
-        charsRead += line_length + 1;
-    }
-
-    if(sem_close((shm->available_files)) == ERROR_VALUE){
-        perror("Error closing semaphore\n");
-        exit(errno);
+        charsRead += line_length;
     }
 
     if(munmap(shm, sizeof(SharedMemory)) == ERROR_VALUE){
@@ -69,13 +66,6 @@ SharedMemory * open_shared_memory_and_sem(char * shm_name, SharedMemory * shm) {
 
     if((shm = mmap(NULL, sizeof(SharedMemory), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0)) == MAP_FAILED) {
         perror("Error mapping shared memory\n");
-        exit(errno);
-    }
-
-    shm->available_files = sem_open(shm->sem_path, O_RDWR);
-    
-    if(shm->available_files == SEM_FAILED) {
-        perror("Error opening a semaphore\n");
         exit(errno);
     }
 

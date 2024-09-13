@@ -10,9 +10,8 @@
 
 #include "sharedMemory.h"
 
-#define SHM_NAME "/shmmm"
+#define SHM_NAME "/shm"
 #define ERROR_VALUE -1
-#define SEM_NAME "/available_files"
 #define ALL_READ_WRITE 00666
 #define MAX_SLAVES 10
 #define PERCENTAGE_FILES_PER_SLAVES 0.1
@@ -101,8 +100,8 @@ int main(int argc, char * argv[]) {
                 
                 while(token != NULL) {
                     fprintf(resultsText, "%s\n", token);
-                    offset_buf_shm +=  snprintf((shm->buf) + offset_buf_shm, MAX_BUF, "%s", token);
-                    sem_post(shm->available_files);
+                    offset_buf_shm +=  snprintf((shm->buf) + offset_buf_shm, MAX_BUF, "%s\n", token);
+                    sem_post(&(shm->available_files));
                     sended++;
                     token = strtok(NULL, "\n");
                 }
@@ -223,7 +222,7 @@ int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS
         if( close(pipe_app_slave_fd[i][READ]) == ERROR_VALUE || close(pipe_slave_app_fd[i][WRITE]) == ERROR_VALUE ) { 
             perror("problem closing border pipe\n");
             return ERROR_VALUE;
-        }//OJO!Todavía nos van a faltar cerrar el extremo de escritura del pipe_app_slave_fd y el de lectura del pipe_slave_app_fd (esto lo hacemos al final de nuestro main pues a estos antes los tenemos que utilizaer para que se puedan leer y escribir los resultados creo)
+        }
     }
     return 0;
 }
@@ -257,9 +256,7 @@ SharedMemory * create_shared_memory(int total_files) {
         return NULL;
     }
 
-    sem_unlink(SEM_NAME);
-    shm->available_files = sem_open(SEM_NAME, O_CREAT, ALL_READ_WRITE, 0);
-    if(shm->available_files == SEM_FAILED) {
+    if(sem_init(&(shm->available_files), 1, 0) == ERROR_VALUE) {
         perror("problem creating a semaphore\n");
         return NULL;
     }
@@ -270,20 +267,14 @@ SharedMemory * create_shared_memory(int total_files) {
     }
 
     shm->total_files = total_files;
-    strcpy(shm->sem_path, SEM_NAME);
 
     return shm;
 }
 
 int destroy_shared_memory_and_sem(SharedMemory * shm) {
 
-    if(sem_close(shm->available_files) == ERROR_VALUE) {
+    if(sem_destroy(&(shm->available_files)) == ERROR_VALUE) {
         perror("Error closing semaphore");
-        return ERROR_VALUE;
-    }
-
-    if(sem_unlink(SEM_NAME) == ERROR_VALUE){
-        perror("Error unlinking semaphore");
         return ERROR_VALUE;
     }
 
