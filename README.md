@@ -11,6 +11,7 @@ This project uses various inter process communications to calculate the md5sum o
 
 ## Running instructions
   ###slave.c
+  
   ./slave
   reads pathfiles from stdin up to an EOF and prints their 
   
