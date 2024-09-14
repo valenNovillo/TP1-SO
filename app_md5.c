@@ -14,6 +14,7 @@
 #define READ 0
 #define WRITE 1
 #define BUF_LEN 5000
+#define SHARED_BETWEEN_PROCESSES 1
 
 // PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------------
 int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS]);
@@ -244,7 +245,7 @@ SharedMemory * create_shared_memory(int total_files) {
         return NULL;
     }
 
-    if(sem_init(&(shm->available_files), 1, 0) == ERROR_VALUE) {
+    if(sem_init(&(shm->available_files), SHARED_BETWEEN_PROCESSES, 0) == ERROR_VALUE) {
         perror("problem creating a semaphore\n");
         return NULL;
     }
