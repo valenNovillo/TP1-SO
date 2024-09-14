@@ -5,9 +5,7 @@ This project uses various inter process communications to calculate the md5sum o
 ## Compiling instructions
   **make all**
 
-  To run the programs with valgrind
-  **make checkval**
-  this compiles the programs without the -fsanitize=address flag
+  **make checkval** to run the programs with valgrind this compiles the programs without the -fsanitize=address flag
 
   **make clean** to delete the object files
 
