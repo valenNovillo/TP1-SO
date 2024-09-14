@@ -10,7 +10,7 @@ This project uses various inter process communications to calculate the md5sum o
   **make clean** to delete the object files
 
 ## Running instructions
-  ###slave.c
+  ### slave.c
   It doesn´t expects any command line arguments
   ./slave
   reads pathfiles from stdin up to an EOF and prints their md5sum
