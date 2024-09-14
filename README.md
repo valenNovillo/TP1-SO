@@ -11,9 +11,9 @@ This project uses various inter process communications to calculate the md5sum o
 
 ## Running instructions
   ###slave.c
-  
+  It doesn´t expects any command line arguments
   ./slave
-  reads pathfiles from stdin up to an EOF and prints their 
+  reads pathfiles from stdin up to an EOF and prints their md5sum
   
   ### app_md5.c
   expects at least one valid path to a file as a command line argument
@@ -23,6 +23,7 @@ This project uses various inter process communications to calculate the md5sum o
   ### view.c
   expects a valid name of an existing shared memory as a command line argument, to use the one printed by app_md5 it needs to be done before its 2 seconds sleep ends
   ./view /shm_name
+  outputs the contents of the buffer contained in the shared memory to stdout
 
   ### piping app_md5.c and view.c
   is not necessary to give a command line arguement to view.c in this format
