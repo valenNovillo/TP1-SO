@@ -15,6 +15,7 @@
 #define WRITE 1
 #define BUF_LEN 5000
 #define SHARED_BETWEEN_PROCESSES 1
+#define MAX_LENGTH_NAME 100
 
 // PROTOTYPES ------------------------------------------------------------------------------------------------------------------------------------------
 int clean_pipes(int slave_count,int (*pipe_slave_app_fd)[PIPE_BORDERS], int (*pipe_app_slave_fd)[PIPE_BORDERS]);
@@ -161,7 +162,10 @@ int initial_distribution(char * argv[], int * pending_processes, int slave_count
         char path_files[BUF_LEN];
         path_files[0] = '\0';
         for(int j = i * files_per_slaves + 1; j <= i * files_per_slaves + files_per_slaves; j++) {
-            strcat(path_files, argv[j]);
+            char name[MAX_LENGTH_NAME] = {0};
+            strncpy(name, argv[j], MAX_LENGTH_NAME - 1);
+            name[MAX_LENGTH_NAME - 1] = '\0';
+            strcat(path_files, name);
             if (j < i * files_per_slaves + files_per_slaves - 1)
                 strcat(path_files, " ");
         }
