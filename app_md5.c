@@ -9,7 +9,7 @@
 #define SHM_NAME "/shm"
 #define MAX_SLAVES 10
 #define PERCENTAGE_FILES_PER_SLAVES 0.1
-#define WAIT_VIEW 2
+#define WAIT_VIEW 5
 #define PIPE_BORDERS 2
 #define READ 0
 #define WRITE 1
@@ -114,6 +114,11 @@ int main(int argc, char * argv[]) {
         exit(errno);
     }
 
+    clean_pipes(slave_count, pipe_slave_app_fd, pipe_app_slave_fd);
+    int numero;
+    for(int i = 0; i < slave_count ; i++) {
+        waitpid(children_pids[i], &numero, 0);
+    }
     fclose(resultsText);
 
 }
@@ -221,9 +226,9 @@ int new_baby_slaves(const int slave_count, int (*pipe_slave_app_fd)[PIPE_BORDERS
 }
 
 void print_conection_info(const char * bufName, const int time) {
-    printf("%s", bufName);
+    printf("%s\n", bufName);
     sleep(time);
-    printf("\n");
+    //printf("\n");
 }
 
 SharedMemory * create_shared_memory(int total_files) {
@@ -284,12 +289,12 @@ int destroy_shared_memory_and_sem(SharedMemory * shm) {
 }
 
 int get_answer(int fd, char * answer) {
-    if(dup2(fd, STDIN_FILENO) != 0){
+    /*if(dup2(fd, STDIN_FILENO) != 0){
         perror("Error copying file descriptor\n");
         return ERROR_VALUE;
-    }
+    } */
 
-    int char_read = read(STDIN_FILENO, answer, MAX_BUF);
+    int char_read = read(fd, answer, MAX_BUF);
 
     if(char_read == ERROR_VALUE){
         perror("Error reading line\n");
@@ -297,6 +302,7 @@ int get_answer(int fd, char * answer) {
     }
     return char_read;
 }
+
 
 
 

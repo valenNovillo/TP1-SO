@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
             perror("Failed reading shm name\n");
             exit(errno);
         }
+        shm_name[strcspn(shm_name, "\n")] = '\0';
     }
 
     SharedMemory * shm = open_shared_memory_and_sem(shm_name);
@@ -37,7 +38,7 @@ int main(int argc, char *argv[]) {
             perror("Error during buffer parsing");
             exit(ERROR_VALUE);
         }
-        charsRead += printf("%.*s\n", (line_end - (shm->buf + charsRead)),shm->buf + charsRead);
+        charsRead += printf("%.*s\n", (int) (line_end - (shm->buf + charsRead)),shm->buf + charsRead);
         (shm->total_files)--;
     }
 
@@ -68,5 +69,4 @@ SharedMemory * open_shared_memory_and_sem(char * shm_name) {
     }
     return shm;
 }
-
 

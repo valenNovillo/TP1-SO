@@ -5,6 +5,5 @@ GCC = gcc
 CFLAGS = -g -Wall -lrt -pthread -fsanitize=address
 
 # Flags de compilación para correr con valgrind
-CFLAGSFROVALGRIND = -g -Wall -lrt -pthread
-
+CFLAGSFORVALGRIND = -g -Wall -lrt -pthread
 
